@@ -1,0 +1,501 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Sky Gunner – Jeu de canonnière aérienne gratuit</title>
+<meta name="description" content="Sky Gunner : pilotez une canonnière aérienne, détruisez les convois ennemis, améliorez votre arsenal et défendez votre base. Jeu gratuit dans le navigateur, sur mobile et PC.">
+
+<!-- ====== ADSENSE : décommente et remplace ca-pub-XXXXXXXXXXXXXXXX par ton identifiant, après approbation du site ====== -->
+<!-- <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script> -->
+
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#0e1116;color:#d9dee7;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.6}
+header{padding:14px 16px;text-align:center;background:#161b22;border-bottom:1px solid #262d38}
+header h1{margin:0;font-size:1.4rem;letter-spacing:.5px}
+header p{margin:2px 0 0;font-size:.85rem;color:#8b96a6}
+.wrap{max-width:520px;margin:0 auto;padding:0 10px}
+.ad{margin:12px auto;min-height:90px;max-width:468px;border:1px dashed #3a4350;color:#5b6675;font-size:.75rem;display:flex;align-items:center;justify-content:center;text-align:center;border-radius:6px}
+/* Quand AdSense est actif, supprime la bordure : .ad{border:0} */
+#stage{position:relative;max-width:480px;margin:10px auto;border-radius:10px;overflow:hidden;box-shadow:0 6px 30px #000a;background:#000}
+#mute{position:absolute;top:44px;right:8px;z-index:2;background:#0008;color:#fff;border:0;border-radius:50%;width:34px;height:34px;font-size:16px;cursor:pointer}
+canvas{display:block;width:100%;height:auto;touch-action:none;cursor:crosshair}
+#overlay{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:rgba(8,12,16,.86);padding:20px}
+#overlay h2{margin:0 0 6px;font-size:1.7rem}
+#overlay p{margin:4px 0 14px;color:#aab4c3;font-size:.95rem}
+button.play{background:#e6b422;color:#1a1400;border:0;border-radius:30px;padding:12px 34px;font-size:1.1rem;font-weight:700;cursor:pointer}
+button.play:active{transform:scale(.97)}
+#ups{display:flex;flex-direction:column;gap:10px;width:100%;max-width:330px}
+button.up{background:#1c2430;color:#fff;border:1px solid #3b4a5f;border-radius:12px;padding:12px 14px;text-align:left;cursor:pointer;font-size:1rem}
+button.up b{display:block;color:#e6b422}
+button.up span{font-size:.85rem;color:#aab4c3}
+button.up:active{background:#2a3647}
+section.content{background:#161b22;border:1px solid #262d38;border-radius:10px;padding:14px 18px;margin:14px 0}
+section.content h2{margin:0 0 6px;font-size:1.1rem;color:#e6b422}
+section.content ul{padding-left:20px;margin:6px 0}
+footer{text-align:center;padding:20px 10px 30px;font-size:.85rem;color:#76808f}
+footer a{color:#9db4d6}
+</style>
+</head>
+<body>
+<header>
+  <h1>🛩️ SKY GUNNER</h1>
+  <p>Canonnière aérienne – défendez la base</p>
+</header>
+
+<div class="wrap">
+
+  <!-- ====== EMPLACEMENT PUB 1 (au-dessus du jeu) ======
+  Remplace le contenu de la div par :
+  <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-XXXXXXXXXXXXXXXX" data-ad-slot="1111111111" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+  -->
+  <div class="ad" id="ad-top">Espace publicitaire</div>
+
+  <div id="stage">
+    <canvas id="c"></canvas>
+    <button id="mute" type="button" aria-label="Son">🔊</button>
+    <div id="overlay">
+      <h2 id="ovTitle">SKY GUNNER</h2>
+      <p id="ovText">Détruisez les véhicules ennemis avant qu'ils n'atteignent votre base.<br><b>Maintenir</b> = mitrailler · <b>Bouton rouge</b> / Espace = obusier<br>Enchaînez les kills pour des combos !</p>
+      <button class="play" id="btn">JOUER</button>
+      <div id="ups"></div>
+    </div>
+  </div>
+
+  <!-- ====== EMPLACEMENT PUB 2 (sous le jeu, jamais sur la zone de jeu) ====== -->
+  <div class="ad" id="ad-bottom">Espace publicitaire</div>
+
+  <section class="content">
+    <h2>Comment jouer</h2>
+    <ul>
+      <li><b>Viser et tirer :</b> sur mobile, posez le doigt sur l'écran et faites-le glisser (la mire se place un peu au-dessus de votre doigt). Sur PC, maintenez le clic gauche.</li>
+      <li><b>Obusier :</b> le bouton rouge en bas à droite (ou la barre Espace) tire un obus puissant qui explose en zone après un court délai. Il se recharge entre deux tirs.</li>
+      <li><b>Objectif :</b> les ennemis descendent vers votre base. S'ils l'atteignent, ils lui infligent des dégâts. Si la base tombe à zéro, la partie est perdue.</li>
+      <li><b>Améliorations :</b> à la fin de chaque vague, choisissez 1 amélioration parmi 3 : canon, cadence, obusier, blindage ou réparation.</li>
+      <li><b>Combos :</b> enchaînez les destructions en moins de 2 secondes pour multiplier vos points (jusqu'à x5).</li>
+    </ul>
+  </section>
+
+  <section class="content">
+    <h2>À propos de Sky Gunner</h2>
+    <p>Sky Gunner est un jeu d'action gratuit qui se joue directement dans le navigateur, sans installation. Vous pilotez une canonnière qui tourne au-dessus du champ de bataille : jeeps rapides, chars blindés, blindés lourds et artillerie à longue portée arrivent par vagues de plus en plus difficiles. Battez votre meilleur score, il est enregistré sur votre appareil.</p>
+  </section>
+
+  <section class="content">
+    <h2>Conseils</h2>
+    <ul>
+      <li>Visez les jeeps en premier : elles sont fragiles mais arrivent vite à la base.</li>
+      <li>L'artillerie (marron) s'arrête loin de la base et la bombarde : éliminez-la en priorité, elle n'avance plus.</li>
+      <li>Gardez l'obusier pour les blindés lourds ou les groupes serrés.</li>
+      <li>Anticipez : l'obus met environ 0,7 seconde à tomber, visez devant la cible.</li>
+      <li>Les ennemis détruits laissent parfois une croix rouge : tirez dessus avant qu'elle disparaisse pour soigner la base (+20).</li>
+    </ul>
+  </section>
+</div>
+
+<footer>
+  <a href="about.html">À propos &amp; contact</a> · <a href="privacy.html">Politique de confidentialité</a> · © Sky Gunner
+</footer>
+
+<script>
+(function(){
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const W=480,H=640;cv.width=W;cv.height=H;
+const overlay=document.getElementById('overlay'),btn=document.getElementById('btn'),
+      ovTitle=document.getElementById('ovTitle'),ovText=document.getElementById('ovText'),
+      ups=document.getElementById('ups'),muteBtn=document.getElementById('mute');
+
+/* ---------- décor pré-rendu ---------- */
+const bg=document.createElement('canvas');bg.width=W;bg.height=H;
+(function(){
+  const g=bg.getContext('2d');let s=7;
+  const r=function(){s=(s*16807)%2147483647;return s/2147483647};
+  g.fillStyle='#3b5a2e';g.fillRect(0,0,W,H);
+  for(let i=0;i<260;i++){
+    g.fillStyle='rgba('+(40+r()*30|0)+','+(70+r()*40|0)+','+(40+r()*20|0)+',.5)';
+    g.beginPath();g.arc(r()*W,r()*H,8+r()*30,0,7);g.fill();
+  }
+  g.strokeStyle='#6b6a5e';g.lineWidth=46;g.lineCap='round';
+  g.beginPath();g.moveTo(120,-10);g.bezierCurveTo(300,150,60,300,240,H-70);g.stroke();
+  g.strokeStyle='#8d8a78';g.lineWidth=3;g.setLineDash([14,16]);g.stroke();g.setLineDash([]);
+  for(let i=0;i<70;i++){
+    const x=r()*W,y=r()*(H-120);
+    g.fillStyle='#1f3a1a';g.beginPath();g.arc(x,y,6+r()*7,0,7);g.fill();
+    g.fillStyle='#2e5226';g.beginPath();g.arc(x-2,y-2,4+r()*4,0,7);g.fill();
+  }
+  g.fillStyle='#4a4f55';g.fillRect(0,H-60,W,60);
+  g.fillStyle='#2b2f33';for(let x=0;x<W;x+=40)g.fillRect(x+4,H-52,32,8);
+  g.fillStyle='#d8c24a';g.font='bold 14px sans-serif';g.textAlign='center';g.fillText('BASE',W/2,H-22);
+})();
+
+/* ---------- données ---------- */
+const TYPES={
+  jeep:{hp:24,speed:70,r:11,dmg:6,score:10,col:'#b9a25a'},
+  tank:{hp:70,speed:42,r:15,dmg:12,score:25,col:'#5d6b4a'},
+  heavy:{hp:180,speed:28,r:20,dmg:25,score:60,col:'#3f4a3a'},
+  arty:{hp:50,speed:38,r:14,dmg:8,score:40,col:'#8a5a4a'}
+};
+const BTN={x:W-52,y:H-112,r:34};
+let state='menu',enemies,shells,fx,parts,pickups,score,wave,kills,baseHp,spawnT,fireT,howT,t,orbit,
+    combo,comboT,shake,banner,pendingUp,cannonDmg,fireInt,howMax,howR,howDmg,armor,
+    aim={x:W/2,y:H/2},firing=false,aimId=null,best=0;
+try{best=+localStorage.getItem('skygunner_best')||0}catch(e){}
+
+const UPGRADES=[
+  {n:'Canon renforcé',d:'+30 % de dégâts de mitrailleuse',f:function(){cannonDmg*=1.3}},
+  {n:'Cadence accrue',d:'Mitrailleuse 15 % plus rapide',f:function(){fireInt=Math.max(.04,fireInt*.85)}},
+  {n:'Obusier rapide',d:'Recharge de l\'obusier −0,5 s',f:function(){howMax=Math.max(1.2,howMax-.5)}},
+  {n:'Obus lourd',d:'Explosion plus large (+15) et +30 % de dégâts',f:function(){howR+=15;howDmg*=1.3}},
+  {n:'Réparation',d:'La base récupère 30 PV',f:function(){baseHp=Math.min(100,baseHp+30)}},
+  {n:'Blindage',d:'−15 % de dégâts reçus (cumulable)',f:function(){armor=Math.min(5,armor+1)}}
+];
+
+/* ---------- sons (WebAudio, aucun fichier externe) ---------- */
+let AC=null,muted=false;
+try{muted=localStorage.getItem('skygunner_mute')==='1'}catch(e){}
+function snd(f,d,type,vol,slide){
+  if(muted)return;
+  try{
+    AC=AC||new (window.AudioContext||window.webkitAudioContext)();
+    if(AC.state==='suspended')AC.resume();
+    const o=AC.createOscillator(),g=AC.createGain(),n=AC.currentTime;
+    o.type=type||'square';o.frequency.setValueAtTime(f,n);
+    if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(20,slide),n+d);
+    g.gain.setValueAtTime(vol||.05,n);g.gain.exponentialRampToValueAtTime(.0001,n+d);
+    o.connect(g);g.connect(AC.destination);o.start();o.stop(n+d);
+  }catch(e){}
+}
+muteBtn.textContent=muted?'🔇':'🔊';
+muteBtn.addEventListener('click',function(){
+  muted=!muted;muteBtn.textContent=muted?'🔇':'🔊';
+  try{localStorage.setItem('skygunner_mute',muted?'1':'0')}catch(e){}
+});
+
+function reset(){
+  enemies=[];shells=[];fx=[];parts=[];pickups=[];score=0;wave=1;kills=0;baseHp=100;
+  spawnT=1;fireT=0;howT=0;t=0;orbit=0;combo=0;comboT=0;shake=0;
+  banner={t:1.6,text:'VAGUE 1'};pendingUp=false;
+  cannonDmg=9;fireInt=.09;howMax=3;howR=75;howDmg=120;armor=0;
+}
+reset();
+
+function spawn(){
+  const roll=Math.random();let type='jeep';
+  if(wave>=4&&roll<.15)type='heavy';
+  else if(wave>=3&&roll<.30)type='arty';
+  else if(wave>=2&&roll<.60)type='tank';
+  const T=TYPES[type];
+  enemies.push({type:type,x:30+Math.random()*(W-60),y:-20,hp:T.hp,max:T.hp,ph:Math.random()*6.28,
+                speed:T.speed*(1+wave*.04),r:T.r,flash:0,stopY:110+Math.random()*90,fireT:1.5});
+}
+
+function boom(x,y,n,col){
+  for(let i=0;i<n;i++){
+    const a=Math.random()*6.28,v=40+Math.random()*140;
+    parts.push({x:x,y:y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,l:.4+Math.random()*.4,m:.8,c:col||'#ffb02e'});
+  }
+}
+
+function hitBase(d){
+  baseHp-=d*(1-.15*armor);
+  snd(70,.3,'square',.1,30);
+  shake=Math.max(shake,6);
+}
+
+function damage(e,d){
+  e.hp-=d;e.flash=.08;
+  if(e.hp<=0&&!e.dead){
+    e.dead=true;kills++;
+    combo=comboT>0?combo+1:1;comboT=2.2;
+    const mult=1+Math.min(4,Math.floor(combo/3));
+    const pts=TYPES[e.type].score*mult;score+=pts;
+    fx.push({x:e.x,y:e.y-10,t:.8,m:.8,k:'text',s:'+'+pts+(mult>1?' x'+mult:'')});
+    snd(120,.25,'sawtooth',.06,40);
+    if(Math.random()<.12)pickups.push({x:e.x,y:e.y,t:8});
+    boom(e.x,e.y,18,'#ff8a1f');
+    fx.push({x:e.x,y:e.y,t:.35,m:.35,r:e.r*2.2,k:'ring'});
+    if(kills%10===0){wave++;pendingUp=true;}
+  }
+}
+
+function fireCannon(){
+  const sx=aim.x+(Math.random()-.5)*26,sy=aim.y+(Math.random()-.5)*26;
+  fx.push({x:sx,y:sy,t:.08,m:.08,r:4,k:'hit'});
+  snd(180,.05,'square',.02,90);
+  for(const p of pickups){
+    if(!p.got&&Math.hypot(p.x-aim.x,p.y-aim.y)<26){
+      p.got=true;baseHp=Math.min(100,baseHp+20);snd(600,.2,'sine',.06,1000);
+      fx.push({x:p.x,y:p.y,t:.4,m:.4,r:16,k:'ring'});
+    }
+  }
+  pickups=pickups.filter(function(p){return !p.got});
+  for(const e of enemies){
+    if(!e.dead&&Math.hypot(e.x-sx,e.y-sy)<e.r+4){damage(e,cannonDmg);break;}
+  }
+}
+
+function fireHowitzer(){
+  if(state!=='play'||howT>0)return;
+  howT=howMax;snd(300,.3,'sine',.08,80);
+  shells.push({x:aim.x,y:aim.y,t:.7,m:.7});
+}
+
+/* ---------- améliorations entre les vagues ---------- */
+function openUpgrades(){
+  state='upgrade';firing=false;aimId=null;pendingUp=false;
+  ovTitle.textContent='VAGUE '+(wave-1)+' RÉUSSIE';
+  ovText.textContent='Choisis une amélioration :';
+  btn.style.display='none';ups.innerHTML='';
+  const pool=UPGRADES.slice().sort(function(){return Math.random()-.5}).slice(0,3);
+  pool.forEach(function(u){
+    const b=document.createElement('button');
+    b.className='up';b.type='button';
+    b.innerHTML='<b>'+u.n+'</b><span>'+u.d+'</span>';
+    b.onclick=function(){
+      u.f();ups.innerHTML='';overlay.style.display='none';
+      state='play';banner={t:1.6,text:'VAGUE '+wave};
+    };
+    ups.appendChild(b);
+  });
+  overlay.style.display='flex';
+}
+
+/* ---------- entrées ---------- */
+function pos(e){
+  const r=cv.getBoundingClientRect();
+  let x=(e.clientX-r.left)*W/r.width,y=(e.clientY-r.top)*H/r.height;
+  if(e.pointerType==='touch')y-=55;
+  return {x:Math.max(0,Math.min(W,x)),y:Math.max(0,Math.min(H-60,y))};
+}
+function inBtn(e){
+  const r=cv.getBoundingClientRect();
+  const x=(e.clientX-r.left)*W/r.width,y=(e.clientY-r.top)*H/r.height;
+  return Math.hypot(x-BTN.x,y-BTN.y)<BTN.r+8;
+}
+cv.addEventListener('pointerdown',function(e){
+  e.preventDefault();
+  if(state!=='play')return;
+  if(inBtn(e)){fireHowitzer();return;}
+  if(aimId===null){
+    aimId=e.pointerId;firing=true;aim=pos(e);
+    try{cv.setPointerCapture(e.pointerId)}catch(x){}
+  }
+});
+cv.addEventListener('pointermove',function(e){
+  if(e.pointerType==='mouse'||e.pointerId===aimId)aim=pos(e);
+});
+function up(e){if(e.pointerId===aimId){aimId=null;firing=false;}}
+cv.addEventListener('pointerup',up);
+cv.addEventListener('pointercancel',up);
+cv.addEventListener('contextmenu',function(e){e.preventDefault();fireHowitzer();});
+window.addEventListener('keydown',function(e){if(e.code==='Space'){e.preventDefault();fireHowitzer();}});
+
+btn.addEventListener('click',function(){
+  reset();state='play';overlay.style.display='none';firing=false;aimId=null;ups.innerHTML='';
+});
+
+function gameOver(){
+  state='over';firing=false;aimId=null;
+  const rec=score>best;
+  if(rec){best=score;try{localStorage.setItem('skygunner_best',best)}catch(e){}}
+  ovTitle.textContent='BASE DÉTRUITE';
+  ovText.innerHTML='Score : <b>'+score+'</b> · Vague '+wave+'<br>Meilleur score : <b>'+best+'</b>'+(rec?' 🏆 Nouveau record !':'');
+  ups.innerHTML='';btn.style.display='';btn.textContent='REJOUER';overlay.style.display='flex';
+}
+
+/* ---------- mise à jour ---------- */
+function update(dt){
+  t+=dt;orbit+=dt*.45;
+  if(howT>0)howT=Math.max(0,howT-dt);
+  if(comboT>0){comboT-=dt;if(comboT<=0)combo=0;}
+  if(shake>0)shake=Math.max(0,shake-dt*30);
+  if(banner&&banner.t>0)banner.t-=dt;
+  if(firing){fireT-=dt;while(fireT<=0){fireCannon();fireT+=fireInt;}}
+  spawnT-=dt;
+  if(spawnT<=0){spawn();spawnT=Math.max(.45,1.5-wave*.1)*(.7+Math.random()*.6);}
+
+  for(const s of shells){
+    s.t-=dt;
+    if(s.t<=0){
+      s.done=true;
+      for(const e of enemies){
+        if(!e.dead&&Math.hypot(e.x-s.x,e.y-s.y)<howR+e.r*.5)damage(e,howDmg);
+      }
+      boom(s.x,s.y,40,'#ffd24a');snd(90,.5,'sawtooth',.1,30);shake=Math.max(shake,8);
+      fx.push({x:s.x,y:s.y,t:.5,m:.5,r:howR,k:'blast'});
+    }
+  }
+  shells=shells.filter(function(s){return !s.done});
+
+  for(const e of enemies){
+    if(e.dead)continue;
+    if(e.flash>0)e.flash-=dt;
+    if(e.type==='arty'&&e.y>=e.stopY){
+      e.y=e.stopY;e.fireT-=dt;
+      if(e.fireT<=0){
+        e.fireT=2.6;hitBase(TYPES.arty.dmg);
+        fx.push({x:e.x,y:e.y,x2:e.x,y2:H-60,t:.3,m:.3,k:'line'});
+        fx.push({x:e.x,y:H-60,t:.4,m:.4,r:26,k:'ring'});
+        boom(e.x,H-60,10,'#ff5a3c');
+      }
+      continue;
+    }
+    e.y+=e.speed*dt;
+    e.x+=Math.sin(t*1.5+e.ph)*22*dt;
+    e.x=Math.max(14,Math.min(W-14,e.x));
+    if(e.y>H-62){
+      hitBase(TYPES[e.type].dmg);e.dead=true;
+      boom(e.x,H-60,14,'#ff5a3c');
+      fx.push({x:e.x,y:H-60,t:.3,m:.3,r:30,k:'ring'});
+    }
+  }
+  enemies=enemies.filter(function(e){return !e.dead});
+
+  for(const p of parts){p.x+=p.vx*dt;p.y+=p.vy*dt;p.l-=dt;}
+  parts=parts.filter(function(p){return p.l>0});
+  for(const p of pickups)p.t-=dt;
+  pickups=pickups.filter(function(p){return p.t>0});
+  for(const f of fx)f.t-=dt;
+  fx=fx.filter(function(f){return f.t>0});
+
+  if(baseHp<=0){baseHp=0;gameOver();return;}
+  if(pendingUp)openUpgrades();
+}
+
+/* ---------- dessin ---------- */
+function drawEnemy(e){
+  ctx.save();ctx.translate(e.x,e.y);
+  const T=TYPES[e.type];
+  ctx.strokeStyle='#161a12';ctx.lineWidth=2;
+  if(e.type==='jeep'){
+    ctx.fillStyle=e.flash>0?'#fff':T.col;
+    ctx.fillRect(-8,-12,16,24);ctx.strokeRect(-8,-12,16,24);
+    ctx.fillStyle='#222';ctx.fillRect(-6,-4,12,7);
+  }else if(e.type==='arty'){
+    ctx.fillStyle='#222';ctx.fillRect(-15,-12,5,24);ctx.fillRect(10,-12,5,24);
+    ctx.fillStyle=e.flash>0?'#fff':T.col;
+    ctx.fillRect(-11,-10,22,20);ctx.strokeRect(-11,-10,22,20);
+    ctx.fillStyle='#2a1e1a';ctx.fillRect(-3,2,6,22);
+    ctx.fillStyle='#ffb02e';ctx.beginPath();ctx.arc(0,-2,4,0,7);ctx.fill();
+  }else{
+    const w=e.type==='tank'?13:18,h=e.type==='tank'?18:26;
+    ctx.fillStyle='#222';ctx.fillRect(-w-3,-h,5,h*2);ctx.fillRect(w-2,-h,5,h*2);
+    ctx.fillStyle=e.flash>0?'#fff':T.col;
+    ctx.fillRect(-w,-h+2,w*2,h*2-4);ctx.strokeRect(-w,-h+2,w*2,h*2-4);
+    ctx.beginPath();ctx.arc(0,0,w*.6,0,7);ctx.fill();ctx.stroke();
+    ctx.fillRect(-2,0,4,h+4);
+  }
+  ctx.restore();
+  if(e.hp<e.max){
+    ctx.fillStyle='#000a';ctx.fillRect(e.x-14,e.y-e.r-10,28,4);
+    ctx.fillStyle='#4be06a';ctx.fillRect(e.x-14,e.y-e.r-10,28*e.hp/e.max,4);
+  }
+}
+
+function drawPlane(x,y,a){
+  ctx.save();ctx.translate(x,y);ctx.rotate(a);
+  ctx.fillStyle='#0006';ctx.fillRect(-15,-3,30,6);
+  ctx.fillStyle='#aeb7c2';ctx.fillRect(-4,-14,8,28);
+  ctx.fillRect(-18,-4,36,6);ctx.fillRect(-8,10,16,4);
+  ctx.fillStyle='#e6b422';ctx.fillRect(-2,-14,4,6);
+  ctx.restore();
+}
+
+function draw(){
+  ctx.save();
+  if(shake>0)ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);
+  ctx.drawImage(bg,0,0);
+  for(const e of enemies)drawEnemy(e);
+
+  for(const s of shells){
+    const k=s.t/s.m;
+    ctx.strokeStyle='rgba(255,70,50,'+(1-k*.4)+')';ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(s.x,s.y,howR*(.25+k*.75),0,7);ctx.stroke();
+    ctx.beginPath();ctx.arc(s.x,s.y,4,0,7);ctx.fillStyle='#ff4632';ctx.fill();
+  }
+  for(const f of fx){
+    const k=f.t/f.m;
+    if(f.k==='blast'){ctx.fillStyle='rgba(255,200,80,'+(k*.6)+')';ctx.beginPath();ctx.arc(f.x,f.y,f.r*(1.1-k*.3),0,7);ctx.fill();}
+    else if(f.k==='ring'){ctx.strokeStyle='rgba(255,255,255,'+k+')';ctx.lineWidth=3;ctx.beginPath();ctx.arc(f.x,f.y,f.r*(2-k),0,7);ctx.stroke();}
+    else if(f.k==='line'){ctx.strokeStyle='rgba(255,90,60,'+k+')';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(f.x,f.y);ctx.lineTo(f.x2,f.y2);ctx.stroke();}
+    else if(f.k==='text'){
+      ctx.globalAlpha=Math.min(1,k*1.5);ctx.fillStyle='#fff';ctx.font='bold 15px sans-serif';ctx.textAlign='center';
+      ctx.fillText(f.s,f.x,f.y-(1-k)*26);ctx.globalAlpha=1;
+    }
+    else{ctx.fillStyle='rgba(255,230,120,'+k+')';ctx.beginPath();ctx.arc(f.x,f.y,f.r,0,7);ctx.fill();}
+  }
+  for(const p of parts){
+    ctx.globalAlpha=Math.max(0,p.l/p.m);ctx.fillStyle=p.c;ctx.fillRect(p.x-2,p.y-2,4,4);
+  }
+  ctx.globalAlpha=1;
+
+  /* bonus de soin : tirer dessus pour le ramasser */
+  for(const p of pickups){
+    if(p.t<2&&Math.floor(p.t*6)%2===0)continue;
+    ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(p.x,p.y,13,0,7);ctx.fill();
+    ctx.fillStyle='#e03a3a';ctx.fillRect(p.x-8,p.y-3,16,6);ctx.fillRect(p.x-3,p.y-8,6,16);
+  }
+
+  /* avion en orbite + tir */
+  const px=W/2+Math.cos(orbit)*215,py=H/2-20+Math.sin(orbit)*270;
+  if(state==='play'&&firing){
+    ctx.strokeStyle='rgba(255,220,100,.75)';ctx.lineWidth=2;ctx.setLineDash([6,8]);
+    ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(aim.x,aim.y);ctx.stroke();ctx.setLineDash([]);
+  }
+  drawPlane(px,py,orbit+Math.PI/2);
+
+  /* mire */
+  if(state==='play'){
+    ctx.strokeStyle=howT>0?'#e6e6e6':'#ff5a3c';ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(aim.x,aim.y,14,0,7);
+    ctx.moveTo(aim.x-22,aim.y);ctx.lineTo(aim.x-6,aim.y);ctx.moveTo(aim.x+6,aim.y);ctx.lineTo(aim.x+22,aim.y);
+    ctx.moveTo(aim.x,aim.y-22);ctx.lineTo(aim.x,aim.y-6);ctx.moveTo(aim.x,aim.y+6);ctx.lineTo(aim.x,aim.y+22);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  /* HUD (ne tremble pas) */
+  ctx.textAlign='left';ctx.fillStyle='#fff';ctx.font='bold 18px sans-serif';
+  ctx.fillText('Score '+score,12,26);
+  ctx.textAlign='right';ctx.fillText('Vague '+wave,W-12,26);
+  ctx.fillStyle='#000a';ctx.fillRect(12,36,120,8);
+  ctx.fillStyle=baseHp>40?'#4be06a':'#ff5a3c';ctx.fillRect(12,36,120*Math.max(0,baseHp)/100,8);
+  ctx.fillStyle='#fff';ctx.font='11px sans-serif';ctx.textAlign='left';ctx.fillText('BASE',138,44);
+  if(comboT>0&&combo>=3){
+    ctx.fillStyle='#ffb02e';ctx.font='bold 15px sans-serif';
+    ctx.fillText('COMBO x'+(1+Math.min(4,Math.floor(combo/3))),12,66);
+  }
+  if(state==='play'&&banner&&banner.t>0){
+    ctx.globalAlpha=Math.min(1,banner.t*2);ctx.fillStyle='#fff';ctx.font='bold 36px sans-serif';ctx.textAlign='center';
+    ctx.fillText(banner.text,W/2,H/2-60);ctx.globalAlpha=1;
+  }
+
+  /* bouton obusier */
+  ctx.beginPath();ctx.arc(BTN.x,BTN.y,BTN.r,0,7);
+  ctx.fillStyle=howT>0?'#552a2a':'#d83a2a';ctx.fill();
+  ctx.lineWidth=3;ctx.strokeStyle='#fff6';ctx.stroke();
+  if(howT>0){
+    ctx.beginPath();ctx.moveTo(BTN.x,BTN.y);
+    ctx.arc(BTN.x,BTN.y,BTN.r-2,-Math.PI/2,-Math.PI/2+6.283*(1-howT/howMax));ctx.closePath();
+    ctx.fillStyle='rgba(255,255,255,.25)';ctx.fill();
+  }
+  ctx.fillStyle='#fff';ctx.font='bold 11px sans-serif';ctx.textAlign='center';
+  ctx.fillText('OBUS',BTN.x,BTN.y+4);
+}
+
+/* ---------- boucle ---------- */
+let last=performance.now();
+function loop(now){
+  const dt=Math.min(.05,(now-last)/1000);last=now;
+  if(state==='play')update(dt);
+  else orbit+=dt*.45;
+  draw();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
